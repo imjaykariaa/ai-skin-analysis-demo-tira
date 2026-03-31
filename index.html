@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tira — AI Skin Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --tira:#111;
+  --tira-dark:#000;
+  --tira-light:#333;
+  --tira-bg:rgba(0,0,0,.04);
+  --primary:#ECECEC;
+  --black:#111;
+  --white:#fff;
+  --bg:#FAFAFA;
+  --g1:#F5F5F5;
+  --g2:#ECECEC;
+  --g3:#D5D5D5;
+  --t1:#111;
+  --t2:#555;
+  --t3:#999;
+  --red:#D32F2F;
+  --red-bg:#FFEBEE;
+  --amber:#EF6C00;
+  --amber-bg:#FFF3E0;
+  --green:#2E7D32;
+  --green-bg:#E8F5E9;
+  --r:16px;
+  --rs:12px;
+  --rp:50px;
+  --f:'Poppins',sans-serif;
+  --fb:'Inter',sans-serif;
+}
+html{height:100%;-webkit-text-size-adjust:100%}
+body{min-height:100%;background:#e8e8e8;font-family:var(--fb);color:var(--t1);line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:430px;margin:0 auto;position:relative;overflow:hidden;min-height:100vh;background:var(--white)}
+@media(min-width:768px){
+  body{display:flex;align-items:center;justify-content:center;padding:20px 0}
+  .app{min-height:92vh;max-height:932px;border-radius:28px;box-shadow:0 16px 60px rgba(0,0,0,.12)}
+}
+.screens{position:relative;width:100%;min-height:100vh}
+@media(min-width:768px){.screens{min-height:92vh;max-height:932px}}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,0,.15,1),opacity .5s;opacity:0;transform:translateX(100%);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.screen.active{opacity:1;transform:translateX(0)}
+.screen.exit-left{opacity:0;transform:translateX(-30%)}
+
+/* === SHARED === */
+.btn{display:block;width:100%;padding:16px;background:var(--black);color:var(--white);border:none;border-radius:var(--rp);text-align:center;font-family:var(--f);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.01em;-webkit-tap-highlight-color:transparent}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.btn:active{transform:scale(.98)}
+.btn:disabled,.btn.off{opacity:.15;pointer-events:none;transform:none;box-shadow:none}
+.btn-tira{background:var(--black)}
+.btn-tira:hover{background:#000;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.btn-outline{background:transparent;border:1.5px solid var(--g3);color:var(--t1)}
+.btn-outline:hover{border-color:var(--black)}
+.back-btn{background:none;border:none;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--fb);-webkit-tap-highlight-color:transparent}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--t3);font-weight:600;margin-bottom:10px}
+
+/* ============= SCREEN 1: LANDING ============= */
+.s1{min-height:100%;background:var(--white);display:flex;flex-direction:column}
+
+/* Tira-style top nav */
+.s1-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--g2)}
+.s1-logo{font-family:var(--f);font-size:22px;font-weight:800;color:var(--black);letter-spacing:-.02em}
+.s1-nav-right{display:flex;align-items:center;gap:10px}
+.s1-nav-icon{width:34px;height:34px;border-radius:50%;background:var(--g1);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.s1-nav-icon svg{width:16px;height:16px;color:var(--t2)}
+
+/* Hero — editorial style */
+.s1-hero{padding:32px 24px 28px;text-align:center;position:relative;overflow:hidden}
+.s1-hero::before{content:'';position:absolute;top:-80px;right:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(0,0,0,.03),transparent 70%);border-radius:50%}
+.s1-hero::after{content:'';position:absolute;bottom:-40px;left:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(0,0,0,.02),transparent 70%);border-radius:50%}
+.s1-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--t2);font-weight:700;margin-bottom:14px;position:relative;z-index:1}
+.s1-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--black);animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.s1-title{font-family:var(--f);font-size:30px;font-weight:800;line-height:1.1;color:var(--black);letter-spacing:-.03em;position:relative;z-index:1}
+.s1-title span{display:block;color:var(--black)}
+.s1-sub{font-size:14px;color:var(--t2);margin-top:12px;line-height:1.6;position:relative;z-index:1;max-width:300px;margin-left:auto;margin-right:auto}
+
+/* Face illustration */
+.s1-face{width:120px;height:150px;margin:24px auto 0;background:linear-gradient(160deg,#F0F0F0,#E8E8E8);border-radius:60px 60px 48px 48px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;box-shadow:0 12px 40px rgba(0,0,0,.06)}
+.s1-face::before{content:'';position:absolute;inset:6px;border:1.5px dashed rgba(0,0,0,.08);border-radius:54px 54px 42px 42px}
+.s1-face-icon{font-size:40px;opacity:.6}
+.s1-face-scan{position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--black),transparent);border-radius:2px;animation:scanline 2.5s ease-in-out infinite;opacity:.3}
+@keyframes scanline{0%{top:10%;opacity:0}10%{opacity:.5}90%{opacity:.5}100%{top:85%;opacity:0}}
+
+/* City selector */
+.s1-city{padding:28px 24px 0}
+.s1-city-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.s1-city-card{padding:16px;background:var(--g1);border:2px solid transparent;border-radius:var(--rs);cursor:pointer;transition:all .25s;text-align:center;-webkit-tap-highlight-color:transparent}
+.s1-city-card:hover{background:var(--white);border-color:var(--g3)}
+.s1-city-card.sel{background:var(--black);border-color:var(--black)}
+.s1-city-card.sel *{color:var(--white)!important}
+.s1-city-emoji{font-size:24px;margin-bottom:4px}
+.s1-city-name{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1)}
+.s1-city-tag{font-size:10px;color:var(--t3);margin-top:2px;font-weight:500}
+.s1-city-card.sel .s1-city-tag{color:rgba(255,255,255,.5)!important}
+
+/* CTA */
+.s1-cta{padding:24px 24px 0}
+.s1-cta-note{text-align:center;font-size:11px;color:var(--t3);margin-top:8px}
+
+/* What we analyze */
+.s1-detect{padding:24px 24px 0}
+.s1-detect-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.s1-dtag{padding:8px 16px;background:var(--g1);border-radius:var(--rp);font-size:12px;font-weight:600;color:var(--t2);border:1px solid var(--g2)}
+
+/* How it works */
+.s1-how{padding:24px 24px 0}
+.s1-how-title{font-family:var(--f);font-size:15px;font-weight:700;color:var(--t1);text-align:center;margin-bottom:14px}
+.s1-steps{display:flex;flex-direction:column;gap:8px}
+.s1-step{display:flex;align-items:center;gap:14px;background:var(--g1);border-radius:var(--rs);padding:14px 16px}
+.s1-step-num{width:28px;height:28px;border-radius:50%;background:var(--black);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--f);font-size:12px;font-weight:800;flex-shrink:0}
+.s1-step-body{flex:1}
+.s1-step-text{font-size:13px;font-weight:700;color:var(--t1)}
+.s1-step-sub{font-size:11px;color:var(--t3);margin-top:1px}
+
+/* Trust */
+.s1-trust{display:flex;justify-content:space-around;padding:24px 16px 32px}
+.s1-trust-item{text-align:center}
+.s1-trust-val{font-family:var(--f);font-size:18px;font-weight:800;color:var(--t1)}
+.s1-trust-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:600;margin-top:2px}
+
+/* ============= SCREEN 2: SCANNING ============= */
+.s2{min-height:100%;background:var(--black);color:var(--white);display:flex;flex-direction:column}
+.s2-top{padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.s2-back{background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--fb)}
+.s2-step{font-size:11px;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+
+/* Camera */
+.s2-camera{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.s2-frame{width:200px;height:260px;border:2px solid rgba(255,255,255,.15);border-radius:100px 100px 80px 80px;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:28px}
+.s2-frame::before{content:'';position:absolute;inset:8px;border:1px dashed rgba(255,255,255,.08);border-radius:inherit}
+.s2-frame-corners{position:absolute;inset:-1px}
+.s2-frame-face{font-size:48px;opacity:.12}
+.s2-frame-scan{position:absolute;width:70%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:scanline 2s ease-in-out infinite}
+.s2-label{font-size:14px;color:rgba(255,255,255,.4);font-weight:500;margin-bottom:24px}
+.s2-capture{width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,.2);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.s2-capture:hover{border-color:rgba(255,255,255,.4)}
+.s2-capture:active{transform:scale(.92)}
+.s2-capture-inner{width:56px;height:56px;border-radius:50%;background:var(--white);transition:transform .15s}
+.s2-capture:active .s2-capture-inner{transform:scale(.9)}
+.s2-skip{font-size:11px;color:rgba(255,255,255,.2);margin-top:20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* Processing */
+.s2-proc{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.s2-proc.show{display:flex}
+.s2-camera.hide{display:none}
+
+.s2-ring{width:120px;height:120px;position:relative;margin-bottom:32px}
+.s2-ring-bg{width:100%;height:100%;border:3px solid rgba(255,255,255,.05);border-radius:50%;position:absolute}
+.s2-ring-spin{width:100%;height:100%;border:3px solid transparent;border-top-color:var(--white);border-right-color:rgba(255,255,255,.4);border-radius:50%;position:absolute;animation:spin 1s linear infinite}
+.s2-ring-glow{position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.05),transparent 70%);animation:glowpulse 2s ease infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glowpulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+.s2-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f);font-size:28px;font-weight:800;letter-spacing:-.02em}
+
+.s2-proc-title{font-family:var(--f);font-size:18px;font-weight:700;margin-bottom:8px}
+.s2-proc-sub{font-size:13px;color:rgba(255,255,255,.35);margin-bottom:28px}
+.s2-proc-steps{display:flex;flex-direction:column;gap:14px;width:100%;max-width:280px}
+.s2-pstep{display:flex;align-items:center;gap:12px;font-size:13px;color:rgba(255,255,255,.2);transition:all .4s;font-weight:500}
+.s2-pstep.on{color:var(--white)}
+.s2-pstep.ok{color:var(--green)}
+.s2-pstep-icon{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .4s;flex-shrink:0}
+.s2-pstep.on .s2-pstep-icon{border-color:var(--white);background:rgba(255,255,255,.1);box-shadow:0 0 12px rgba(255,255,255,.15)}
+.s2-pstep.ok .s2-pstep-icon{border-color:var(--green);background:rgba(67,160,71,.15)}
+
+/* ============= SCREEN 3: RESULTS ============= */
+.s3{background:var(--white)}
+.s3-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--g2)}
+.s3-top-title{font-family:var(--f);font-size:15px;font-weight:700;color:var(--t1)}
+.s3-top-city{font-size:12px;color:var(--t3);font-weight:500}
+
+/* Weather reveal */
+.s3-weather{background:var(--black);margin:16px;border-radius:var(--r);padding:20px;color:var(--white);position:relative;overflow:hidden}
+.s3-weather-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.4);font-weight:600;margin-bottom:12px;position:relative;z-index:1}
+.s3-weather-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;position:relative;z-index:1}
+.s3-witem{text-align:center}
+.s3-witem-val{font-family:var(--f);font-size:20px;font-weight:800}
+.s3-witem-label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.4);font-weight:600;margin-top:2px}
+.s3-witem-sev{font-size:8px;font-weight:700;margin-top:3px;padding:2px 8px;border-radius:var(--rp);display:inline-block}
+.s3-witem-sev.good{background:rgba(67,160,71,.15);color:#66BB6A}
+.s3-witem-sev.moderate{background:rgba(249,168,37,.15);color:#FDD835}
+.s3-witem-sev.bad{background:rgba(229,57,53,.15);color:#EF5350}
+
+/* Score */
+.s3-score{display:flex;align-items:center;gap:20px;padding:24px 20px}
+.score-ring{position:relative;width:110px;height:110px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.score-ring svg{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--g2);stroke-width:8}
+.ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+.ring-fill.hi{stroke:var(--green)}
+.ring-fill.mid{stroke:var(--amber)}
+.ring-fill.low{stroke:var(--red)}
+.score-num{font-family:var(--f);font-size:34px;font-weight:800;color:var(--t1);position:relative;z-index:1;letter-spacing:-.02em}
+.score-of{font-size:11px;color:var(--t3);font-weight:500;position:relative;z-index:1}
+.s3-score-info{flex:1}
+.s3-score-label{font-family:var(--f);font-size:18px;font-weight:700;color:var(--t1);margin-bottom:6px}
+.s3-score-meta{display:flex;flex-wrap:wrap;gap:6px}
+.s3-meta{font-size:11px;font-weight:600;color:var(--t2);background:var(--g1);padding:5px 12px;border-radius:var(--rp)}
+
+/* Face map */
+.s3-facemap{padding:0 20px 20px}
+.s3-fm-header{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px}
+.fm-wrap{position:relative;width:100%;max-width:240px;margin:0 auto;aspect-ratio:3/4}
+.fm-img{width:100%;height:100%;object-fit:cover;border-radius:var(--rs);display:block}
+.hotspot{position:absolute;border:2px solid rgba(229,57,53,.3);border-radius:50%;background:rgba(229,57,53,.05);animation:hpulse 2.5s ease infinite}
+.hotspot.orange{border-color:rgba(249,168,37,.3);background:rgba(249,168,37,.05)}
+.hotspot.green{border-color:rgba(67,160,71,.3);background:rgba(67,160,71,.05)}
+@keyframes hpulse{0%,100%{opacity:.4}50%{opacity:1}}
+.pin{position:absolute;display:flex;align-items:center;gap:3px;z-index:2}
+.pin-tag{font-size:8px;font-weight:700;padding:3px 8px;border-radius:var(--rp);color:var(--white);white-space:nowrap}
+.pin-tag small{opacity:.7;margin-left:2px}
+.pin-tag.red{background:var(--red)}.pin-tag.orange{background:var(--amber)}.pin-tag.green{background:var(--green)}
+.pin-line{width:14px;height:1.5px}
+.pin-line.red{background:var(--red)}.pin-line.orange{background:var(--amber)}.pin-line.green{background:var(--green)}
+.pin-dot{width:5px;height:5px;border-radius:50%;box-shadow:0 0 4px currentColor}
+.pin-dot.red{background:var(--red);color:var(--red)}.pin-dot.orange{background:var(--amber);color:var(--amber)}.pin-dot.green{background:var(--green);color:var(--green)}
+
+/* Concern cards */
+.s3-concerns{padding:0 20px 20px}
+.s3-concerns-title{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px}
+.cc{background:var(--white);border:1px solid var(--g2);border-radius:var(--rs);padding:16px;margin-bottom:10px;transition:all .2s}
+.cc:last-child{margin-bottom:0}
+.cc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cc-name{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1)}
+.sev{font-size:9px;font-weight:700;padding:4px 12px;border-radius:var(--rp)}
+.sev.att{background:var(--red-bg);color:var(--red)}
+.sev.avg{background:var(--amber-bg);color:var(--amber)}
+.sev.good{background:var(--green-bg);color:var(--green)}
+.cc-bar{height:6px;background:var(--g2);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.cc-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.cc-fill.low{background:var(--red)}.cc-fill.mid{background:var(--amber)}.cc-fill.hi{background:var(--green)}
+.cc-score{font-size:10px;color:var(--t3);font-weight:600;margin-bottom:8px}
+.cc-env{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:4px 10px;border-radius:var(--rp);margin-bottom:8px}
+.cc-env.neg{background:#FFF5F5;color:var(--red)}
+.cc-env.pos{background:var(--green-bg);color:var(--green)}
+.cc-desc{font-size:12px;color:var(--t2);line-height:1.6}
+
+.s3-cta{padding:16px 20px 28px}
+
+/* ============= SCREEN 4: ADVICE ============= */
+.s4{background:var(--white)}
+.s4-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--g2)}
+.s4-top-title{font-family:var(--f);font-size:15px;font-weight:700;color:var(--t1)}
+
+.s4-hero{background:var(--black);margin:16px;border-radius:var(--r);padding:20px;color:var(--white);position:relative;overflow:hidden}
+.s4-hero-title{font-family:var(--f);font-size:18px;font-weight:800;margin-bottom:4px;position:relative;z-index:1}
+.s4-hero-sub{font-size:12px;color:rgba(255,255,255,.5);position:relative;z-index:1}
+
+.s4-section{padding:20px}
+.s4-section-title{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.s4-section-title .icon{font-size:16px}
+
+.adv{display:flex;gap:12px;padding:14px;border-radius:var(--rs);margin-bottom:8px}
+.adv:last-child{margin-bottom:0}
+.adv.avoid{background:#FFF8F7;border:1px solid #FFDDD9}
+.adv.prefer{background:#F6FFF6;border:1px solid #D4EED4}
+.adv-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.adv-body{flex:1}
+.adv-text{font-size:13px;font-weight:700;color:var(--t1);line-height:1.3}
+.adv-reason{font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5}
+
+.ing{background:var(--white);border:1px solid var(--g2);border-radius:var(--rs);padding:16px;margin-bottom:8px}
+.ing:last-child{margin-bottom:0}
+.ing-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ing-name{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1)}
+.ing-pct{font-size:10px;font-weight:700;color:var(--black);background:var(--primary);padding:4px 10px;border-radius:var(--rp)}
+.ing-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.ing-tag{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 8px;border-radius:var(--rp);background:var(--g1);color:var(--t2)}
+.ing-tag.red{background:var(--red-bg);color:var(--red)}
+.ing-tag.green{background:var(--green-bg);color:var(--green)}
+.ing-why{font-size:11px;color:var(--t2);line-height:1.6}
+
+.s4-bottom{padding:16px 20px 28px;text-align:center}
+.s4-restart{font-size:12px;color:var(--t2);font-weight:600;cursor:pointer;margin-top:14px;display:inline-flex;align-items:center;gap:4px}
+.s4-restart:hover{color:var(--black)}
+
+/* JSON (dev only) */
+.json-panel{margin:0 20px 12px;background:var(--g1);border:1px solid var(--g2);border-radius:var(--rs);overflow:hidden}
+.json-toggle{padding:12px 14px;font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.json-arrow{transition:transform .2s;font-size:9px}
+.json-panel.open .json-arrow{transform:rotate(180deg)}
+.json-body{display:none;padding:0 14px 12px;font-size:9px;line-height:1.4;color:var(--t2);overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-family:'SF Mono',Menlo,monospace;max-height:280px;overflow-y:auto}
+.json-panel.open .json-body{display:block}
+
+/* Product cards */
+.s4-products{padding:0 20px 20px}
+.s4-products-title{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.s4-products-sub{font-size:11px;color:var(--t3);margin-bottom:14px}
+.prod-scroll{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px}
+.prod-scroll::-webkit-scrollbar{display:none}
+.prod{min-width:160px;max-width:160px;border:1px solid var(--g2);border-radius:var(--rs);overflow:hidden;flex-shrink:0;background:var(--white)}
+.prod-img{width:100%;height:160px;background:var(--g1);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.prod-img img{width:100%;height:100%;object-fit:cover}
+.prod-img-placeholder{font-size:40px;opacity:.15}
+.prod-match{position:absolute;top:8px;left:8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:var(--rp);background:var(--black);color:var(--white)}
+.prod-body{padding:12px}
+.prod-brand{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:600;margin-bottom:2px}
+.prod-name{font-size:12px;font-weight:600;color:var(--t1);line-height:1.3;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-price{display:flex;align-items:center;gap:6px}
+.prod-price-now{font-family:var(--f);font-size:14px;font-weight:700;color:var(--t1)}
+.prod-price-was{font-size:11px;color:var(--t3);text-decoration:line-through}
+.prod-off{font-size:9px;font-weight:700;color:var(--green)}
+.prod-rating{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:10px;color:var(--t3);font-weight:500}
+.prod-star{color:var(--amber)}
+.prod-add{display:block;width:100%;padding:8px;background:var(--black);color:var(--white);border:none;border-radius:0 0 calc(var(--rs) - 1px) calc(var(--rs) - 1px);font-family:var(--fb);font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;transition:background .2s}
+.prod-add:hover{background:#000}
+
+/* Fade-in animation */
+.fade-up{opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.fade-up.vis{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="screens">
+
+    <!-- SCREEN 1: LANDING -->
+    <div class="screen active" id="s1">
+      <div class="s1">
+
+        <div class="s1-nav">
+          <div class="s1-logo">tira</div>
+          <div class="s1-nav-right">
+            <div class="s1-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+            <div class="s1-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          </div>
+        </div>
+
+        <div class="s1-hero">
+          <div class="s1-eyebrow"><div class="s1-eyebrow-dot"></div> AI Skin Analysis</div>
+          <div class="s1-title">Know What Your<br>Skin Needs <span>Today</span></div>
+          <div class="s1-sub">Your city's weather affects your skin daily. Get a personalized routine based on real-time conditions.</div>
+          <div class="s1-face">
+            <div class="s1-face-scan"></div>
+            <div class="s1-face-icon">&#x1F9D1;</div>
+          </div>
+        </div>
+
+        <div class="s1-city">
+          <div class="section-label">Select Your City</div>
+          <div class="s1-city-grid">
+            <div class="s1-city-card" onclick="selectCity('bangalore',this)">
+              <div class="s1-city-emoji">&#127987;</div>
+              <div class="s1-city-name">Bangalore</div>
+              <div class="s1-city-tag">Garden City</div>
+            </div>
+            <div class="s1-city-card" onclick="selectCity('delhi',this)">
+              <div class="s1-city-emoji">&#127961;</div>
+              <div class="s1-city-name">Delhi</div>
+              <div class="s1-city-tag">Capital</div>
+            </div>
+            <div class="s1-city-card" onclick="selectCity('mumbai',this)">
+              <div class="s1-city-emoji">&#127754;</div>
+              <div class="s1-city-name">Mumbai</div>
+              <div class="s1-city-tag">Maximum City</div>
+            </div>
+            <div class="s1-city-card" onclick="selectCity('kolkata',this)">
+              <div class="s1-city-emoji">&#127897;</div>
+              <div class="s1-city-name">Kolkata</div>
+              <div class="s1-city-tag">City of Joy</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s1-cta">
+          <button class="btn off" id="cta-start" onclick="goTo('s2')">Analyze My Skin</button>
+          <div class="s1-cta-note">Free &bull; 60 seconds &bull; No sign-up needed</div>
+        </div>
+
+        <div class="s1-detect">
+          <div class="section-label" style="text-align:center">What We Analyze</div>
+          <div class="s1-detect-tags">
+            <div class="s1-dtag">Oiliness</div>
+            <div class="s1-dtag">Acne</div>
+            <div class="s1-dtag">Dryness</div>
+            <div class="s1-dtag">Pigmentation</div>
+          </div>
+        </div>
+
+        <div class="s1-how">
+          <div class="s1-how-title">How It Works</div>
+          <div class="s1-steps">
+            <div class="s1-step">
+              <div class="s1-step-num">1</div>
+              <div class="s1-step-body"><div class="s1-step-text">Scan Your Face</div><div class="s1-step-sub">Quick AI-powered analysis</div></div>
+            </div>
+            <div class="s1-step">
+              <div class="s1-step-num">2</div>
+              <div class="s1-step-body"><div class="s1-step-text">Check Your City's Weather</div><div class="s1-step-sub">UV, pollution, humidity — all factored in</div></div>
+            </div>
+            <div class="s1-step">
+              <div class="s1-step-num">3</div>
+              <div class="s1-step-body"><div class="s1-step-text">Get Personalized Advice</div><div class="s1-step-sub">What to use, what to avoid, and why</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s1-trust">
+          <div class="s1-trust-item"><div class="s1-trust-val">100%</div><div class="s1-trust-label">Private</div></div>
+          <div class="s1-trust-item"><div class="s1-trust-val">AI</div><div class="s1-trust-label">Powered</div></div>
+          <div class="s1-trust-item"><div class="s1-trust-val">Free</div><div class="s1-trust-label">No Strings</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SCREEN 2: SCAN -->
+    <div class="screen" id="s2">
+      <div class="s2">
+        <div class="s2-top">
+          <button class="s2-back" onclick="goTo('s1')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>
+          <div class="s2-step">Step 1 of 3</div>
+        </div>
+        <div class="s2-camera" id="s2-camera">
+          <div class="s2-frame">
+            <div class="s2-frame-face">&#x1F9D1;</div>
+            <div class="s2-frame-scan"></div>
+          </div>
+          <div class="s2-label">Position your face in the frame</div>
+          <button class="s2-capture" onclick="startScan()"><div class="s2-capture-inner"></div></button>
+          <div class="s2-skip" onclick="startScan()">Demo mode — uses sample data</div>
+        </div>
+        <div class="s2-proc" id="s2-proc">
+          <div class="s2-ring">
+            <div class="s2-ring-glow"></div>
+            <div class="s2-ring-bg"></div>
+            <div class="s2-ring-spin"></div>
+            <div class="s2-ring-pct" id="pct">0%</div>
+          </div>
+          <div class="s2-proc-title">Analyzing your skin</div>
+          <div class="s2-proc-sub" id="proc-city"></div>
+          <div class="s2-proc-steps" id="psteps">
+            <div class="s2-pstep" data-i="0"><div class="s2-pstep-icon"></div>Scanning face structure</div>
+            <div class="s2-pstep" data-i="1"><div class="s2-pstep-icon"></div>Fetching weather for <span id="weather-city">your city</span></div>
+            <div class="s2-pstep" data-i="2"><div class="s2-pstep-icon"></div>Mapping skin concerns</div>
+            <div class="s2-pstep" data-i="3"><div class="s2-pstep-icon"></div>Generating personalized advice</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: RESULTS -->
+    <div class="screen" id="s3"><div id="s3c"></div></div>
+
+    <!-- SCREEN 4: ADVICE -->
+    <div class="screen" id="s4"><div id="s4c"></div></div>
+
+  </div>
+</div>
+
+<script>
+// === CONFIG ===
+const OWM_KEY='', WAQI_TOKEN='';
+const CITIES={bangalore:{lat:12.97,lon:77.59,name:'Bangalore'},delhi:{lat:28.61,lon:77.21,name:'Delhi'},mumbai:{lat:19.08,lon:72.88,name:'Mumbai'},kolkata:{lat:22.57,lon:88.36,name:'Kolkata'}};
+const MOCK_W={bangalore:{temp:28,humidity:65,uv:7,aqi:85},delhi:{temp:38,humidity:35,uv:10,aqi:220},mumbai:{temp:32,humidity:82,uv:9,aqi:120},kolkata:{temp:34,humidity:78,uv:8,aqi:155}};
+const BASE={score:74,age:26,type:'Combination',tone:'Medium',concerns:{oiliness:{b:58,n:'Oiliness'},acne:{b:52,n:'Acne'},dryness:{b:65,n:'Dryness'},pigmentation:{b:45,n:'Pigmentation'}}};
+
+let city=null, wData=null, wSrc='mock', results=null;
+const sid=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36);
+const zpd={city:null,selectedAt:null,weather:null,concerns:{},timestamp:new Date().toISOString(),screens:[],sid};
+
+function track(n,d={}){console.log('[TiraAnalytics]',{event:n,ts:new Date().toISOString(),sid,...d});try{window.parent.postMessage({type:'tira_skin',event:n,...d},'*')}catch(e){}}
+
+// === CITY ===
+function selectCity(k,el){
+  city=k;
+  document.querySelectorAll('.s1-city-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('cta-start').classList.remove('off');
+  zpd.city=CITIES[k].name;zpd.selectedAt=new Date().toISOString();
+  track('city_selected',{city:CITIES[k].name});
+}
+
+// === NAV ===
+let cur='s1';
+function goTo(id){
+  if(id===cur)return;
+  const c=document.getElementById(cur),n=document.getElementById(id);
+  c.classList.remove('active');c.classList.add('exit-left');
+  n.classList.add('active');n.scrollTop=0;
+  setTimeout(()=>c.classList.remove('exit-left'),500);
+  zpd.screens.push(cur);cur=id;
+  track('screen_view',{screen:id});
+}
+
+// === SCAN ===
+function startScan(){
+  track('scan_start',{city:CITIES[city].name});
+  document.getElementById('s2-camera').classList.add('hide');
+  document.getElementById('s2-proc').classList.add('show');
+  document.getElementById('proc-city').textContent='Personalized for '+CITIES[city].name;
+  document.getElementById('weather-city').textContent=CITIES[city].name;
+
+  const pctEl=document.getElementById('pct'), steps=document.querySelectorAll('#psteps .s2-pstep');
+  let pct=0;
+  const pi=setInterval(()=>{pct=Math.min(pct+Math.random()*8+2,95);pctEl.textContent=Math.round(pct)+'%'},200);
+  let si=0;steps[0].classList.add('on');
+  const sti=setInterval(()=>{
+    if(si<steps.length){steps[si].classList.remove('on');steps[si].classList.add('ok');steps[si].querySelector('.s2-pstep-icon').textContent='✓'}
+    si++;
+    if(si<steps.length)steps[si].classList.add('on');
+    else clearInterval(sti);
+  },1200);
+
+  Promise.all([fetchW(city),new Promise(r=>setTimeout(r,5200))]).then(([w])=>{
+    clearInterval(pi);pctEl.textContent='100%';
+    wData=w;zpd.weather={...w,at:new Date().toISOString()};
+    results=compute(BASE.concerns,w);
+    track('scan_complete',{city:CITIES[city].name,src:wSrc});
+    setTimeout(()=>{renderS3();goTo('s3')},500);
+  });
+}
+
+async function fetchW(ck){
+  if(!OWM_KEY&&!WAQI_TOKEN){wSrc='mock';return MOCK_W[ck]}
+  const c=CITIES[ck],r={...MOCK_W[ck]};wSrc='live';
+  try{
+    const f=[];
+    if(OWM_KEY){f.push(fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${c.lat}&lon=${c.lon}&appid=${OWM_KEY}&units=metric`).then(r=>r.json()).then(d=>{if(d.main){r.temp=Math.round(d.main.temp);r.humidity=d.main.humidity}}).catch(()=>{}));f.push(fetch(`https://api.openweathermap.org/data/2.5/uvi?lat=${c.lat}&lon=${c.lon}&appid=${OWM_KEY}`).then(r=>r.json()).then(d=>{if(d.value!=null)r.uv=Math.round(d.value)}).catch(()=>{}))}
+    if(WAQI_TOKEN){f.push(fetch(`https://api.waqi.info/feed/geo:${c.lat};${c.lon}/?token=${WAQI_TOKEN}`).then(r=>r.json()).then(d=>{if(d.status==='ok'&&d.data)r.aqi=d.data.aqi}).catch(()=>{}))}
+    await Promise.allSettled(f);
+  }catch(e){wSrc='mock'}return r;
+}
+
+// === SEVERITY ===
+function uvS(v){if(v>=8)return{l:'Very High',m:-15,c:'bad'};if(v>=6)return{l:'High',m:-10,c:'moderate'};if(v>=3)return{l:'Moderate',m:-5,c:'moderate'};return{l:'Low',m:0,c:'good'}}
+function aqiS(v){if(v>=200)return{l:'Very Poor',m:-15,c:'bad'};if(v>=150)return{l:'Poor',m:-10,c:'bad'};if(v>=100)return{l:'Moderate',m:-5,c:'moderate'};return{l:'Good',m:0,c:'good'}}
+function humS(v){if(v>=80)return{l:'Very High',m:-10,d:'hi',c:'bad'};if(v>=65)return{l:'High',m:-5,d:'hi',c:'moderate'};if(v<=30)return{l:'Very Low',m:-10,d:'lo',c:'bad'};if(v<=45)return{l:'Low',m:-5,d:'lo',c:'moderate'};return{l:'Normal',m:0,d:'n',c:'good'}}
+function tmpS(v){if(v>=38)return{l:'Extreme',m:-12,c:'bad'};if(v>=32)return{l:'Hot',m:-8,c:'moderate'};if(v>=25)return{l:'Warm',m:-3,c:'moderate'};return{l:'Cool',m:0,c:'good'}}
+
+function compute(bc,w){
+  const uv=uvS(w.uv),aqi=aqiS(w.aqi),hum=humS(w.humidity),tmp=tmpS(w.temp);
+  const mx={oiliness:{uv:uv.m*.3,aqi:aqi.m*.2,hum:hum.d==='hi'?hum.m*1:hum.m*.1,tmp:tmp.m*.8},acne:{uv:uv.m*.2,aqi:aqi.m*.6,hum:hum.d==='hi'?hum.m*.7:0,tmp:tmp.m*.5},dryness:{uv:uv.m*.5,aqi:aqi.m*.4,hum:hum.d==='lo'?hum.m*1:(hum.d==='hi'?Math.abs(hum.m)*.5:0),tmp:tmp.m*.3},pigmentation:{uv:uv.m*1,aqi:aqi.m*.3,hum:hum.m*.1,tmp:tmp.m*.2}};
+  const res={};
+  for(const[k,b]of Object.entries(bc)){
+    const im=mx[k],tm=Math.round(im.uv+im.aqi+im.hum+im.tmp),adj=Math.max(5,Math.min(95,b.b+tm));
+    const sorted=Object.entries(im).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+    res[k]={n:b.n,base:b.b,adj,mod:tm,sev:adj<45?'Needs Attention':adj<70?'Average':'Good',dom:sorted[0][0],domV:Math.round(sorted[0][1]),exp:explain(k,w)};
+  }
+  const avg=Math.round(Object.values(res).reduce((s,c)=>s+c.adj,0)/4);
+  return{c:res,score:avg,w,uv,aqi,hum,tmp};
+}
+
+function explain(k,w){
+  const cn=CITIES[city].name;
+  if(k==='oiliness'){if(w.humidity>=75)return`High humidity (${w.humidity}%) in ${cn} is boosting sebum production. Oil-free moisturizers and mattifying SPF recommended.`;if(w.temp>=33)return`${w.temp}°C heat is triggering excess oil. Use lightweight gel products.`;return`Conditions are mildly affecting oiliness. Balanced routine recommended.`}
+  if(k==='acne'){if(w.aqi>=150)return`AQI ${w.aqi} in ${cn} — pollution is clogging pores. Double cleanse tonight and use niacinamide.`;if(w.humidity>=75)return`${w.humidity}% humidity + pollution creates breakout conditions. Salicylic acid cleanser helps.`;return`Moderate environmental stress. Keep cleansing routine consistent.`}
+  if(k==='dryness'){if(w.humidity<=45)return`Low humidity (${w.humidity}%) is pulling moisture from skin. Layer hyaluronic acid under ceramide moisturizer.`;if(w.uv>=8)return`UV ${w.uv} is damaging skin barrier. SPF + squalane protect hydration.`;if(w.humidity>=75)return`High humidity helps retain moisture. Use lightweight hydration.`;return`Moisture levels stable. Maintain hydration routine.`}
+  if(k==='pigmentation'){if(w.uv>=8)return`UV ${w.uv} (Very High) drives melanin overproduction in ${cn}. SPF 50+ and Vitamin C are critical today.`;if(w.aqi>=150)return`Pollution (AQI ${w.aqi}) adds oxidative stress worsening dark spots. Antioxidant serum essential.`;return`UV moderate — still apply SPF to prevent pigmentation.`}
+  return'';
+}
+
+// === RENDER RESULTS ===
+function renderS3(){
+  const r=results,w=r.w,cn=CITIES[city].name,sc=r.score,circ=2*Math.PI*48,off=circ-(sc/100)*circ;
+  const hl=sc>=75?'Looking Great':sc>=55?'Room to Improve':'Needs Attention';
+  const ringC=sc>=75?'hi':sc>=55?'mid':'low';
+  const sorted=Object.values(r.c).sort((a,b)=>a.adj-b.adj);
+  const fl={uv:'UV',aqi:'AQI',hum:'Humidity',tmp:'Temp'};
+
+  function sC(s){return s==='Needs Attention'?'att':s==='Good'?'good':'avg'}
+  function fC(v){return v<45?'low':v<70?'mid':'hi'}
+  function pC(s){return s==='Needs Attention'?'red':s==='Good'?'green':'orange'}
+
+  let cards='';sorted.forEach(c=>{
+    const ml=c.mod<0?`${fl[c.dom]} worsened by ${Math.abs(c.mod)} pts`:c.mod>0?`Improved by ${c.mod} pts`:'No weather impact';
+    cards+=`<div class="cc"><div class="cc-top"><div class="cc-name">${c.n}</div><div class="sev ${sC(c.sev)}">${c.sev}</div></div><div class="cc-bar"><div class="cc-fill ${fC(c.adj)}" style="width:0%"></div></div><div class="cc-score">${c.adj}/100</div><div class="cc-env ${c.mod<0?'neg':c.mod>0?'pos':''}">&#x26A0; ${ml}</div><div class="cc-desc">${c.exp}</div></div>`;
+  });
+
+  const pp=[{c:sorted[0],top:'20%',left:'1%',s:'l'},{c:sorted[1],top:'50%',left:'1%',s:'l'},{c:sorted[2],top:'22%',right:'1%',s:'r'},{c:sorted[3],top:'54%',right:'1%',s:'r'}];
+  let pins='';pp.forEach(p=>{if(!p.c)return;const col=pC(p.c.sev);const st=p.s==='l'?`top:${p.top};left:${p.left}`:`top:${p.top};right:${p.right};flex-direction:row-reverse`;pins+=`<div class="pin" style="${st}"><div class="pin-tag ${col}">${p.c.n} <small>${p.c.adj}</small></div><div class="pin-line ${col}"></div><div class="pin-dot ${col}"></div></div>`;});
+
+  sorted.forEach(c=>{zpd.concerns[c.n.toLowerCase()]=c.adj});
+
+  document.getElementById('s3c').innerHTML=`
+    <div class="s3-top"><button class="back-btn" onclick="goTo('s1')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button><div class="s3-top-title">Your Results</div><div class="s3-top-city">${cn}</div></div>
+    <div class="s3-weather fade-up">
+      <div class="s3-weather-label">Today's Environment in ${cn}</div>
+      <div class="s3-weather-grid">
+        <div class="s3-witem"><div class="s3-witem-val">${w.uv}</div><div class="s3-witem-label">UV Index</div><div class="s3-witem-sev ${r.uv.c}">${r.uv.l}</div></div>
+        <div class="s3-witem"><div class="s3-witem-val">${w.aqi}</div><div class="s3-witem-label">AQI</div><div class="s3-witem-sev ${r.aqi.c}">${r.aqi.l}</div></div>
+        <div class="s3-witem"><div class="s3-witem-val">${w.humidity}%</div><div class="s3-witem-label">Humidity</div><div class="s3-witem-sev ${r.hum.c}">${r.hum.l}</div></div>
+        <div class="s3-witem"><div class="s3-witem-val">${w.temp}°</div><div class="s3-witem-label">Temp</div><div class="s3-witem-sev ${r.tmp.c}">${r.tmp.l}</div></div>
+      </div>
+    </div>
+    <div class="s3-score fade-up">
+      <div class="score-ring"><svg viewBox="0 0 110 110"><circle class="ring-bg" cx="55" cy="55" r="48"/><circle class="ring-fill ${ringC}" cx="55" cy="55" r="48" stroke-dasharray="${circ}" stroke-dashoffset="${circ}"/></svg><div style="display:flex;flex-direction:column;align-items:center"><div class="score-num">${sc}</div><div class="score-of">/100</div></div></div>
+      <div class="s3-score-info"><div class="s3-score-label">${hl}</div><div class="s3-score-meta"><div class="s3-meta">${BASE.type}</div><div class="s3-meta">${BASE.tone} Tone</div><div class="s3-meta">Age ${BASE.age}</div></div></div>
+    </div>
+    <div class="s3-facemap fade-up"><div class="s3-fm-header">Concern Map</div><div class="fm-wrap"><img class="fm-img" src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=360&h=480&fit=crop&crop=face&auto=format&q=80" alt=""><div class="hotspot" style="top:16%;left:8%;width:28%;height:18%"></div><div class="hotspot" style="top:16%;right:8%;width:28%;height:18%"></div><div class="hotspot orange" style="top:50%;left:28%;width:44%;height:16%;border-radius:40%"></div>${pins}</div></div>
+    <div class="s3-concerns fade-up"><div class="s3-concerns-title">Detailed Breakdown</div>${cards}</div>
+    <div class="s3-cta"><button class="btn btn-tira" onclick="renderS4();goTo('s4')">See Today's Advice &rarr;</button></div>
+  `;
+
+  // Animate in
+  setTimeout(()=>{
+    document.querySelectorAll('#s3c .fade-up').forEach((el,i)=>setTimeout(()=>el.classList.add('vis'),i*150));
+    // Animate ring
+    const ring=document.querySelector('.ring-fill');
+    if(ring)setTimeout(()=>ring.setAttribute('stroke-dashoffset',off),100);
+    // Animate bars
+    document.querySelectorAll('#s3c .cc-fill').forEach((el,i)=>{
+      setTimeout(()=>el.style.width=el.parentElement.parentElement.querySelector('.cc-score').textContent.split('/')[0]+'%',300+i*100);
+    });
+  },200);
+  track('results_view',{score:sc,top:sorted[0].n,city:cn});
+}
+
+// === TIRA PRODUCT CATALOG ===
+const PRODUCTS={
+  niacinamide:[
+    {brand:'Minimalist',name:'10% Niacinamide Face Serum',price:599,mrp:599,img:'https://images-static.nykaa.com/media/catalog/product/8/9/8964286_1.jpg',rating:4.3,reviews:'12.5K'},
+    {brand:'The Ordinary',name:'Niacinamide 10% + Zinc 1%',price:590,mrp:690,img:'https://images-static.nykaa.com/media/catalog/product/tr/e1bd85aTHEORDINARY_8.jpg',rating:4.1,reviews:'8.2K'},
+    {brand:'Olay',name:'Super Serum with Niacinamide',price:1499,mrp:1999,img:'https://images-static.nykaa.com/media/catalog/product/1/2/1235642_1.jpg',rating:4.4,reviews:'3.1K'},
+  ],
+  salicylic:[
+    {brand:'Paula\'s Choice',name:'2% BHA Liquid Exfoliant',price:3290,mrp:3290,img:'https://images-static.nykaa.com/media/catalog/product/8/f/8f1e680PAUCH00000009_1.jpg',rating:4.5,reviews:'6.8K'},
+    {brand:'Minimalist',name:'2% Salicylic Acid Serum',price:549,mrp:549,img:'https://images-static.nykaa.com/media/catalog/product/5/b/5b7df3eMINIM00000044_1.jpg',rating:4.2,reviews:'9.3K'},
+    {brand:'CeraVe',name:'SA Smoothing Cleanser',price:1259,mrp:1399,img:'https://images-static.nykaa.com/media/catalog/product/4/c/4cc7e0aCERAV00000012_1.jpg',rating:4.3,reviews:'2.1K'},
+  ],
+  vitaminc:[
+    {brand:'Garnier',name:'Bright Complete Vitamin C Serum',price:349,mrp:449,img:'https://images-static.nykaa.com/media/catalog/product/f/d/fd89f7fGARNI00001437_1.jpg',rating:4.2,reviews:'15K'},
+    {brand:'Plum',name:'15% Vitamin C Serum',price:674,mrp:749,img:'https://images-static.nykaa.com/media/catalog/product/b/5/b55a3a0PLUM000000051_1.jpg',rating:4.0,reviews:'5.4K'},
+    {brand:'Klairs',name:'Freshly Juiced Vitamin Drop',price:1490,mrp:1490,img:'https://images-static.nykaa.com/media/catalog/product/k/l/klair_vitcdrop.jpg',rating:4.4,reviews:'4.2K'},
+  ],
+  hyaluronic:[
+    {brand:'Minimalist',name:'2% Hyaluronic Acid Serum',price:599,mrp:599,img:'https://images-static.nykaa.com/media/catalog/product/8/5/8586052_1.jpg',rating:4.3,reviews:'11K'},
+    {brand:'L\'Oreal Paris',name:'Hyaluronic Acid Serum',price:599,mrp:999,img:'https://images-static.nykaa.com/media/catalog/product/8/2/8204085LOREA00000760_1.jpg',rating:4.1,reviews:'7.6K'},
+    {brand:'Neutrogena',name:'Hydro Boost Gel Cream',price:899,mrp:999,img:'https://images-static.nykaa.com/media/catalog/product/n/e/ne8906009543611.jpg',rating:4.4,reviews:'9.8K'},
+  ],
+  spf:[
+    {brand:'La Shield',name:'Priming Sunscreen SPF 50',price:504,mrp:560,img:'https://images-static.nykaa.com/media/catalog/product/a/6/a6b28d3LASHI00000003_2.jpg',rating:4.2,reviews:'5.6K'},
+    {brand:'Minimalist',name:'SPF 50 Sunscreen',price:499,mrp:499,img:'https://images-static.nykaa.com/media/catalog/product/4/7/4738e5fMINIM00000068_1.jpg',rating:4.0,reviews:'8.4K'},
+    {brand:'Aqualogica',name:'Glow+ Dewy Sunscreen SPF 50',price:499,mrp:599,img:'https://images-static.nykaa.com/media/catalog/product/b/6/b6ba63cAQUAL00000008_1.jpg',rating:4.3,reviews:'12K'},
+  ],
+  antipollution:[
+    {brand:'Plum',name:'Green Tea Renewed Clarity Night Gel',price:575,mrp:650,img:'https://images-static.nykaa.com/media/catalog/product/e/8/e812be2PLUM000000012_1.jpg',rating:4.1,reviews:'3.8K'},
+    {brand:'Biotique',name:'Bio Morning Nectar Lotion',price:209,mrp:249,img:'https://images-static.nykaa.com/media/catalog/product/b/i/biomnl120.jpg',rating:4.0,reviews:'6.1K'},
+  ],
+  oilfree:[
+    {brand:'Cetaphil',name:'Oily Skin Cleanser',price:409,mrp:455,img:'https://images-static.nykaa.com/media/catalog/product/a/b/ab4d510CETAP0000014_1.jpg',rating:4.4,reviews:'7.2K'},
+    {brand:'Sebamed',name:'Clear Face Care Gel',price:550,mrp:650,img:'https://images-static.nykaa.com/media/catalog/product/s/e/sebamed_gel.jpg',rating:4.2,reviews:'4.5K'},
+  ]
+};
+
+function getRecommendedProducts(concerns,w){
+  const prods=[];const seen=new Set();
+  function add(cat,reason){
+    if(!PRODUCTS[cat])return;
+    PRODUCTS[cat].forEach(p=>{
+      const key=p.brand+p.name;
+      if(!seen.has(key)){seen.add(key);prods.push({...p,reason,cat})}
+    });
+  }
+  // Based on concerns
+  if(concerns.oiliness&&concerns.oiliness.adj<60){add('niacinamide','Recommended for oil control');add('oilfree','Lightweight for oily skin')}
+  if(concerns.acne&&concerns.acne.adj<60)add('salicylic','Targets acne & pore buildup');
+  if(concerns.pigmentation&&concerns.pigmentation.adj<55)add('vitaminc','Brightens & fights dark spots');
+  if(concerns.dryness&&concerns.dryness.adj<60||w.humidity<=50)add('hyaluronic','Deep hydration for dry skin');
+  // Based on weather
+  if(w.uv>=6)add('spf','UV protection for today');
+  if(w.aqi>=120)add('antipollution','Anti-pollution defense');
+  return prods.slice(0,8); // max 8 products
+}
+
+// === RENDER ADVICE ===
+function renderS4(){
+  const r=results,w=r.w,cn=CITIES[city].name;
+  const avoid=[],prefer=[];
+  if(w.uv>=8){avoid.push({t:'Avoid prolonged sun exposure',r:`UV ${w.uv} — reapply SPF every 2h, especially 11AM–3PM.`,i:'☀️'});prefer.push({t:'SPF 50+ gel sunscreen',r:`UV ${w.uv} needs max protection. Gel formula works in ${w.temp}°C heat.`,i:'🛡️'})}else if(w.uv>=6){avoid.push({t:"Don't skip sunscreen",r:`UV ${w.uv} causes pigmentation even through windows.`,i:'☀️'});prefer.push({t:'SPF 30+ daily',r:`Moderate UV protection with antioxidants.`,i:'🛡️'})}
+  if(w.aqi>=150){avoid.push({t:"Don't leave skin unprotected",r:`AQI ${w.aqi} — heavy particulate matter in ${cn}.`,i:'🏭'});prefer.push({t:'Double cleanse at night',r:`AQI ${w.aqi} needs thorough cleansing.`,i:'🧴'})}else if(w.aqi>=100){prefer.push({t:'Morning antioxidant serum',r:`AQI ${w.aqi} — Vitamin C fights pollution damage.`,i:'💧'})}
+  if(w.humidity>=75){avoid.push({t:'Skip heavy creams & oils',r:`${w.humidity}% humidity — skin retains moisture, heavy products clog.`,i:'💦'});prefer.push({t:'Oil-free gel moisturizer',r:`Lightweight hydration for ${w.humidity}% humidity.`,i:'✨'})}else if(w.humidity<=45){avoid.push({t:'Avoid alcohol-based toners',r:`${w.humidity}% humidity dehydrates — alcohol makes it worse.`,i:'🚫'});prefer.push({t:'Hydrating toner + ceramides',r:`Lock moisture against ${w.humidity}% humidity.`,i:'💧'})}
+  if(w.temp>=35)prefer.push({t:'Mattifying primer',r:`${w.temp}°C heat causes excess sweat & oil.`,i:'❄️'});
+
+  const ing=[];const c=r.c;
+  if(c.oiliness.adj<60)ing.push({n:'Niacinamide',p:'5-10%',tags:[{t:'Oil Control',c:'red'},{t:'Anti-Pollution',c:'green'}],w:`Controls sebum and strengthens barrier against ${w.aqi>=100?'pollution':'environmental'} stress.`});
+  if(c.acne.adj<60)ing.push({n:'Salicylic Acid',p:'1-2%',tags:[{t:'Pore Clearing',c:''},{t:'Anti-Acne',c:'red'}],w:`Dissolves pore buildup — key in ${w.humidity>=70?'humid':'polluted'} conditions.`});
+  if(c.pigmentation.adj<55)ing.push({n:'Vitamin C',p:'15-20%',tags:[{t:'Brightening',c:''},{t:'UV Defense',c:'green'}],w:`Counters UV-driven melanin. Critical with UV ${w.uv}.`});
+  if(c.dryness.adj<60||w.humidity<=50)ing.push({n:'Hyaluronic Acid',p:'1-2%',tags:[{t:'Hydration',c:''},{t:'Barrier Repair',c:'green'}],w:w.humidity>=65?`Draws moisture from ${w.humidity}% humidity into skin.`:`Replenishes moisture in ${w.humidity}% humidity.`});
+  if(w.aqi>=120)ing.push({n:'Vitamin E',p:'0.5-1%',tags:[{t:'Anti-Pollution',c:'green'},{t:'Antioxidant',c:''}],w:`Neutralizes free radicals from AQI ${w.aqi}.`});
+  if(w.uv>=7)ing.push({n:'Zinc Oxide SPF',p:'50+',tags:[{t:'UV Shield',c:'green'},{t:'Broad Spectrum',c:'red'}],w:`Physical UV filter essential at UV ${w.uv}.`});
+
+  const dy=buildDY(r,w,avoid,prefer,ing);
+
+  let ah='';avoid.forEach(a=>{ah+=`<div class="adv avoid"><div class="adv-icon">${a.i}</div><div class="adv-body"><div class="adv-text">${a.t}</div><div class="adv-reason">${a.r}</div></div></div>`});
+  let ph='';prefer.forEach(a=>{ph+=`<div class="adv prefer"><div class="adv-icon">${a.i}</div><div class="adv-body"><div class="adv-text">${a.t}</div><div class="adv-reason">${a.r}</div></div></div>`});
+  let ih='';ing.forEach(i=>{const tgs=i.tags.map(t=>`<div class="ing-tag ${t.c}">${t.t}</div>`).join('');ih+=`<div class="ing"><div class="ing-top"><div class="ing-name">${i.n}</div><div class="ing-pct">${i.p}</div></div><div class="ing-tags">${tgs}</div><div class="ing-why">${i.w}</div></div>`});
+
+  // Build product cards
+  const prods=getRecommendedProducts(r.c,w);
+  let prodH='';prods.forEach(p=>{
+    const off=p.mrp>p.price?Math.round((1-p.price/p.mrp)*100):0;
+    prodH+=`<div class="prod">
+      <div class="prod-img"><div class="prod-img-placeholder">&#x1F9F4;</div><div class="prod-match">${p.reason.split(' ').slice(0,2).join(' ')}</div></div>
+      <div class="prod-body">
+        <div class="prod-brand">${p.brand}</div>
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-price"><span class="prod-price-now">₹${p.price}</span>${off?`<span class="prod-price-was">₹${p.mrp}</span><span class="prod-off">${off}% off</span>`:''}</div>
+        <div class="prod-rating"><span class="prod-star">★</span> ${p.rating} (${p.reviews})</div>
+      </div>
+      <button class="prod-add" onclick="track('product_click',{product:'${p.name}',brand:'${p.brand}'})">Add to Bag</button>
+    </div>`;
+  });
+
+  document.getElementById('s4c').innerHTML=`
+    <div class="s4-top"><button class="back-btn" onclick="goTo('s3')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Results</button><div class="s4-top-title">Today's Advice</div><div style="width:60px"></div></div>
+    <div class="s4-hero fade-up"><div class="s4-hero-title">Personalized for ${cn}</div><div class="s4-hero-sub">UV ${w.uv} &bull; AQI ${w.aqi} &bull; ${w.humidity}% Humidity &bull; ${w.temp}°C</div></div>
+    <div class="s4-section fade-up"><div class="s4-section-title"><span class="icon">&#x1F6AB;</span>Avoid Today</div>${ah}</div>
+    <div class="s4-section fade-up"><div class="s4-section-title"><span class="icon">&#x2705;</span>Use Today</div>${ph}</div>
+    <div class="s4-section fade-up" style="border-top:1px solid var(--g2)"><div class="s4-section-title"><span class="icon">&#x1F9EA;</span>Recommended Ingredients</div>${ih}</div>
+    <div class="s4-products fade-up" style="border-top:1px solid var(--g2);padding-top:20px">
+      <div class="s4-products-title">Shop What Your Skin Needs</div>
+      <div class="s4-products-sub">Curated from Tira based on your analysis</div>
+      <div class="prod-scroll">${prodH}</div>
+    </div>
+    <div class="json-panel" id="jp"><div class="json-toggle" onclick="document.getElementById('jp').classList.toggle('open');track('json_viewed')">API Output (Developer) <span class="json-arrow">&#x25BC;</span></div><pre class="json-body">${JSON.stringify(dy,null,2)}</pre></div>
+    <div class="s4-bottom"><button class="btn" onclick="track('shop_all')">View All on Tira</button><div class="s4-restart" onclick="restart()">&#x21BB; Start Over</div></div>
+  `;
+  setTimeout(()=>document.querySelectorAll('#s4c .fade-up').forEach((el,i)=>setTimeout(()=>el.classList.add('vis'),i*120)),200);
+  track('advice_generated',{avoid:avoid.length,prefer:prefer.length,ingredients:ing.length,city:cn});
+  console.log('[TiraDY]',dy);
+}
+
+function buildDY(r,w,av,pr,ing){
+  const cn=CITIES[city].name;
+  return{v:'1.0',ts:new Date().toISOString(),sid,user:{city:cn,skinType:BASE.type,skinTone:BASE.tone,score:r.score},environment:{city:cn,uv:w.uv,uvSev:r.uv.l,aqi:w.aqi,aqiSev:r.aqi.l,humidity:w.humidity,humSev:r.hum.l,temp:w.temp,tmpSev:r.tmp.l,src:wSrc},analysis:{score:r.score,concerns:Object.values(r.c).map(c=>({name:c.n,base:c.base,adjusted:c.adj,severity:c.sev,modifier:c.mod,dominant:c.dom}))},recommendations:{prefer:ing.map(i=>({name:i.n,concentration:i.p,reason:i.w})),avoid:av.map(a=>({text:a.t,reason:a.r})),tags:[...new Set(Object.values(r.c).flatMap(c=>genTags(c,w)))]},advice:{avoid:av.map(a=>({text:a.t,reason:a.r})),prefer:pr.map(p=>({text:p.t,reason:p.r}))},zeroPartyData:zpd};
+}
+function genTags(c,w){const t=[];if(w.aqi>=100)t.push('anti-pollution');if(w.uv>=6)t.push('spf-critical');if(w.humidity>=70)t.push('lightweight');if(w.humidity<=45)t.push('deep-hydration');t.push(c.n.toLowerCase()+'-care');return t}
+
+function restart(){
+  track('restart');city=null;wData=null;results=null;
+  document.querySelectorAll('.s1-city-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('cta-start').classList.add('off');
+  document.getElementById('s2-camera').classList.remove('hide');
+  document.getElementById('s2-proc').classList.remove('show');
+  document.querySelectorAll('#psteps .s2-pstep').forEach(s=>{s.classList.remove('on','ok');s.querySelector('.s2-pstep-icon').textContent=''});
+  document.getElementById('pct').textContent='0%';
+  document.getElementById('s3c').innerHTML='';
+  document.getElementById('s4c').innerHTML='';
+  goTo('s1');
+}
+</script>
+</body>
+</html>
