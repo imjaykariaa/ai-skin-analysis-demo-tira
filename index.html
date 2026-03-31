@@ -377,10 +377,15 @@ body{min-height:100%;background:#e8e8e8;font-family:var(--fb);color:var(--t1);li
         <div class="s1-detect">
           <div class="section-label" style="text-align:center">What We Analyze</div>
           <div class="s1-detect-tags">
-            <div class="s1-dtag">Oiliness</div>
             <div class="s1-dtag">Acne</div>
-            <div class="s1-dtag">Dryness</div>
             <div class="s1-dtag">Pigmentation</div>
+            <div class="s1-dtag">Wrinkles</div>
+            <div class="s1-dtag">Dark Circles</div>
+            <div class="s1-dtag">Pores</div>
+            <div class="s1-dtag">Hydration</div>
+            <div class="s1-dtag">Whiteheads</div>
+            <div class="s1-dtag">Scars</div>
+            <div class="s1-dtag">Eye Bags</div>
           </div>
         </div>
 
@@ -460,7 +465,7 @@ body{min-height:100%;background:#e8e8e8;font-family:var(--fb);color:var(--t1);li
 const OWM_KEY='', WAQI_TOKEN='';
 const CITIES={bangalore:{lat:12.97,lon:77.59,name:'Bangalore'},delhi:{lat:28.61,lon:77.21,name:'Delhi'},mumbai:{lat:19.08,lon:72.88,name:'Mumbai'},kolkata:{lat:22.57,lon:88.36,name:'Kolkata'}};
 const MOCK_W={bangalore:{temp:28,humidity:65,uv:7,aqi:85},delhi:{temp:38,humidity:35,uv:10,aqi:220},mumbai:{temp:32,humidity:82,uv:9,aqi:120},kolkata:{temp:34,humidity:78,uv:8,aqi:155}};
-const BASE={score:74,age:26,type:'Combination',tone:'Medium',concerns:{oiliness:{b:58,n:'Oiliness'},acne:{b:52,n:'Acne'},dryness:{b:65,n:'Dryness'},pigmentation:{b:45,n:'Pigmentation'}}};
+const BASE={score:79,age:26,type:'Combination',tone:'Medium',concerns:{whiteheads:{b:50,n:'Whiteheads',tn:'whiteheads'},scars:{b:58,n:'Post Acne Scars',tn:'scars'},hydration:{b:58,n:'Hydration',tn:'hydration'},acne:{b:71,n:'Acne',tn:'acne'},dark_circles:{b:92,n:'Dark Circles',tn:'dark_circles'},pores:{b:94,n:'Pores',tn:'pores'},eye_bags:{b:96,n:'Eye Bags',tn:'eye_bags'},pigmentation:{b:96,n:'Pigmentation',tn:'pigmentation'},wrinkles:{b:97,n:'Wrinkles',tn:'wrinkles'}}};
 
 let city=null, wData=null, wSrc='mock', results=null;
 const sid=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36);
@@ -537,23 +542,40 @@ function tmpS(v){if(v>=38)return{l:'Extreme',m:-12,c:'bad'};if(v>=32)return{l:'H
 
 function compute(bc,w){
   const uv=uvS(w.uv),aqi=aqiS(w.aqi),hum=humS(w.humidity),tmp=tmpS(w.temp);
-  const mx={oiliness:{uv:uv.m*.3,aqi:aqi.m*.2,hum:hum.d==='hi'?hum.m*1:hum.m*.1,tmp:tmp.m*.8},acne:{uv:uv.m*.2,aqi:aqi.m*.6,hum:hum.d==='hi'?hum.m*.7:0,tmp:tmp.m*.5},dryness:{uv:uv.m*.5,aqi:aqi.m*.4,hum:hum.d==='lo'?hum.m*1:(hum.d==='hi'?Math.abs(hum.m)*.5:0),tmp:tmp.m*.3},pigmentation:{uv:uv.m*1,aqi:aqi.m*.3,hum:hum.m*.1,tmp:tmp.m*.2}};
+  // Weather impact matrix for each GlamAR API concern
+  const mx={
+    whiteheads:{uv:uv.m*.2,aqi:aqi.m*.5,hum:hum.d==='hi'?hum.m*.8:0,tmp:tmp.m*.6},
+    scars:{uv:uv.m*.7,aqi:aqi.m*.3,hum:hum.m*.1,tmp:tmp.m*.1},
+    hydration:{uv:uv.m*.4,aqi:aqi.m*.3,hum:hum.d==='lo'?hum.m*1:(hum.d==='hi'?Math.abs(hum.m)*.4:0),tmp:tmp.m*.4},
+    acne:{uv:uv.m*.2,aqi:aqi.m*.6,hum:hum.d==='hi'?hum.m*.7:0,tmp:tmp.m*.5},
+    dark_circles:{uv:uv.m*.1,aqi:aqi.m*.2,hum:hum.m*.05,tmp:tmp.m*.1},
+    pores:{uv:uv.m*.1,aqi:aqi.m*.4,hum:hum.d==='hi'?hum.m*.6:0,tmp:tmp.m*.7},
+    eye_bags:{uv:uv.m*.05,aqi:aqi.m*.1,hum:hum.m*.1,tmp:tmp.m*.05},
+    pigmentation:{uv:uv.m*1,aqi:aqi.m*.3,hum:hum.m*.1,tmp:tmp.m*.2},
+    wrinkles:{uv:uv.m*.8,aqi:aqi.m*.2,hum:hum.d==='lo'?hum.m*.5:0,tmp:tmp.m*.1}
+  };
   const res={};
   for(const[k,b]of Object.entries(bc)){
-    const im=mx[k],tm=Math.round(im.uv+im.aqi+im.hum+im.tmp),adj=Math.max(5,Math.min(95,b.b+tm));
+    const im=mx[k]||{uv:0,aqi:0,hum:0,tmp:0};
+    const tm=Math.round(im.uv+im.aqi+im.hum+im.tmp),adj=Math.max(5,Math.min(95,b.b+tm));
     const sorted=Object.entries(im).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
-    res[k]={n:b.n,base:b.b,adj,mod:tm,sev:adj<45?'Needs Attention':adj<70?'Average':'Good',dom:sorted[0][0],domV:Math.round(sorted[0][1]),exp:explain(k,w)};
+    res[k]={n:b.n,tn:b.tn,base:b.b,adj,mod:tm,sev:adj<45?'Needs Attention':adj<70?'Average':'Good',dom:sorted[0][0],domV:Math.round(sorted[0][1]),exp:explain(k,w)};
   }
-  const avg=Math.round(Object.values(res).reduce((s,c)=>s+c.adj,0)/4);
+  const avg=Math.round(Object.values(res).reduce((s,c)=>s+c.adj,0)/Object.values(res).length);
   return{c:res,score:avg,w,uv,aqi,hum,tmp};
 }
 
 function explain(k,w){
   const cn=CITIES[city].name;
-  if(k==='oiliness'){if(w.humidity>=75)return`High humidity (${w.humidity}%) in ${cn} is boosting sebum production. Oil-free moisturizers and mattifying SPF recommended.`;if(w.temp>=33)return`${w.temp}°C heat is triggering excess oil. Use lightweight gel products.`;return`Conditions are mildly affecting oiliness. Balanced routine recommended.`}
-  if(k==='acne'){if(w.aqi>=150)return`AQI ${w.aqi} in ${cn} — pollution is clogging pores. Double cleanse tonight and use niacinamide.`;if(w.humidity>=75)return`${w.humidity}% humidity + pollution creates breakout conditions. Salicylic acid cleanser helps.`;return`Moderate environmental stress. Keep cleansing routine consistent.`}
-  if(k==='dryness'){if(w.humidity<=45)return`Low humidity (${w.humidity}%) is pulling moisture from skin. Layer hyaluronic acid under ceramide moisturizer.`;if(w.uv>=8)return`UV ${w.uv} is damaging skin barrier. SPF + squalane protect hydration.`;if(w.humidity>=75)return`High humidity helps retain moisture. Use lightweight hydration.`;return`Moisture levels stable. Maintain hydration routine.`}
-  if(k==='pigmentation'){if(w.uv>=8)return`UV ${w.uv} (Very High) drives melanin overproduction in ${cn}. SPF 50+ and Vitamin C are critical today.`;if(w.aqi>=150)return`Pollution (AQI ${w.aqi}) adds oxidative stress worsening dark spots. Antioxidant serum essential.`;return`UV moderate — still apply SPF to prevent pigmentation.`}
+  if(k==='whiteheads'){if(w.aqi>=150)return`AQI ${w.aqi} in ${cn} — particulate matter clogs pores causing whiteheads. Double cleanse and use salicylic acid.`;if(w.humidity>=75)return`${w.humidity}% humidity boosts sebum, increasing whiteheads. Use oil-free products.`;return`Mild environmental impact. Keep pore-cleansing routine consistent.`}
+  if(k==='scars'){if(w.uv>=8)return`UV ${w.uv} darkens post-acne marks in ${cn}. SPF 50+ and Vitamin C critical to prevent scar darkening.`;if(w.aqi>=150)return`AQI ${w.aqi} slows scar healing. Antioxidant serum + gentle exfoliation recommended.`;return`Moderate conditions. Consistent niacinamide use helps fade scars.`}
+  if(k==='hydration'){if(w.humidity<=45)return`Low humidity (${w.humidity}%) in ${cn} is pulling moisture from skin. Layer hyaluronic acid under ceramide moisturizer.`;if(w.uv>=8)return`UV ${w.uv} damages skin barrier, reducing hydration. SPF + squalane recommended.`;if(w.humidity>=75)return`High humidity helps retain moisture. Use lightweight hydration only.`;return`Moisture levels stable. Maintain hydration routine.`}
+  if(k==='acne'){if(w.aqi>=150)return`AQI ${w.aqi} in ${cn} — pollution is clogging pores and triggering breakouts. Double cleanse tonight and use niacinamide.`;if(w.humidity>=75)return`${w.humidity}% humidity + heat creates breakout conditions. Salicylic acid cleanser helps.`;return`Moderate environmental stress. Keep cleansing routine consistent.`}
+  if(k==='dark_circles'){if(w.aqi>=150)return`AQI ${w.aqi} oxidative stress can worsen dark circles. Vitamin C eye cream and adequate sleep essential.`;return`Dark circles mostly influenced by sleep and genetics. Current conditions have minimal impact.`}
+  if(k==='pores'){if(w.humidity>=75)return`${w.humidity}% humidity expands pores and increases oil. Use niacinamide to minimize appearance.`;if(w.temp>=35)return`${w.temp}°C heat dilates pores. Clay masks and mattifying products help.`;return`Pore size stable. Use gentle exfoliation to maintain clarity.`}
+  if(k==='eye_bags'){return`Eye bags are primarily influenced by sleep, hydration, and genetics. Environmental conditions have minimal effect.`}
+  if(k==='pigmentation'){if(w.uv>=8)return`UV ${w.uv} (Very High) drives melanin overproduction in ${cn}. SPF 50+ and Vitamin C are critical today.`;if(w.aqi>=150)return`Pollution (AQI ${w.aqi}) adds oxidative stress worsening dark spots. Antioxidant serum essential.`;return`UV moderate — still apply SPF daily to prevent pigmentation.`}
+  if(k==='wrinkles'){if(w.uv>=8)return`UV ${w.uv} accelerates collagen breakdown in ${cn}. SPF 50+ and retinol at night are essential.`;if(w.humidity<=40)return`Low humidity (${w.humidity}%) dehydrates skin, making fine lines more visible. Hyaluronic acid serum helps.`;return`Wrinkle risk moderate. Maintain SPF and antioxidant routine.`}
   return'';
 }
 
@@ -659,15 +681,16 @@ function getRecommendedProducts(concerns,w){
       if(!seen.has(key)){seen.add(key);prods.push({...p,reason,cat})}
     });
   }
-  // Based on concerns
-  if(concerns.oiliness&&concerns.oiliness.adj<60){add('niacinamide','Recommended for oil control');add('oilfree','Lightweight for oily skin')}
-  if(concerns.acne&&concerns.acne.adj<60)add('salicylic','Targets acne & pore buildup');
-  if(concerns.pigmentation&&concerns.pigmentation.adj<55)add('vitaminc','Brightens & fights dark spots');
-  if(concerns.dryness&&concerns.dryness.adj<60||w.humidity<=50)add('hyaluronic','Deep hydration for dry skin');
+  // Based on API concerns
+  if(concerns.whiteheads&&concerns.whiteheads.adj<60)add('niacinamide','Controls whiteheads');
+  if(concerns.acne&&concerns.acne.adj<70)add('salicylic','Targets acne & breakouts');
+  if(concerns.pigmentation&&concerns.pigmentation.adj<80||concerns.scars&&concerns.scars.adj<70)add('vitaminc','Brightens & fades marks');
+  if(concerns.hydration&&concerns.hydration.adj<70||w.humidity<=50)add('hyaluronic','Boosts hydration');
+  if(concerns.pores&&concerns.pores.adj<80){add('niacinamide','Minimizes pores');add('oilfree','Lightweight care')}
   // Based on weather
   if(w.uv>=6)add('spf','UV protection for today');
   if(w.aqi>=120)add('antipollution','Anti-pollution defense');
-  return prods.slice(0,8); // max 8 products
+  return prods.slice(0,8);
 }
 
 // === RENDER ADVICE ===
@@ -680,10 +703,13 @@ function renderS4(){
   if(w.temp>=35)prefer.push({t:'Mattifying primer',r:`${w.temp}°C heat causes excess sweat & oil.`,i:'❄️'});
 
   const ing=[];const c=r.c;
-  if(c.oiliness.adj<60)ing.push({n:'Niacinamide',p:'5-10%',tags:[{t:'Oil Control',c:'red'},{t:'Anti-Pollution',c:'green'}],w:`Controls sebum and strengthens barrier against ${w.aqi>=100?'pollution':'environmental'} stress.`});
-  if(c.acne.adj<60)ing.push({n:'Salicylic Acid',p:'1-2%',tags:[{t:'Pore Clearing',c:''},{t:'Anti-Acne',c:'red'}],w:`Dissolves pore buildup — key in ${w.humidity>=70?'humid':'polluted'} conditions.`});
-  if(c.pigmentation.adj<55)ing.push({n:'Vitamin C',p:'15-20%',tags:[{t:'Brightening',c:''},{t:'UV Defense',c:'green'}],w:`Counters UV-driven melanin. Critical with UV ${w.uv}.`});
-  if(c.dryness.adj<60||w.humidity<=50)ing.push({n:'Hyaluronic Acid',p:'1-2%',tags:[{t:'Hydration',c:''},{t:'Barrier Repair',c:'green'}],w:w.humidity>=65?`Draws moisture from ${w.humidity}% humidity into skin.`:`Replenishes moisture in ${w.humidity}% humidity.`});
+  if(c.acne&&c.acne.adj<70)ing.push({n:'Salicylic Acid',p:'1-2%',tags:[{t:'Anti-Acne',c:'red'},{t:'Pore Clearing',c:''}],w:`Dissolves pore buildup — key in ${w.humidity>=70?'humid':'polluted'} conditions.`});
+  if(c.whiteheads&&c.whiteheads.adj<60)ing.push({n:'Niacinamide',p:'5-10%',tags:[{t:'Sebum Control',c:'red'},{t:'Anti-Pollution',c:'green'}],w:`Controls sebum and whiteheads. Strengthens barrier against ${w.aqi>=100?'pollution':'environmental'} stress.`});
+  if(c.pigmentation&&c.pigmentation.adj<80||c.scars&&c.scars.adj<70)ing.push({n:'Vitamin C',p:'15-20%',tags:[{t:'Brightening',c:''},{t:'UV Defense',c:'green'}],w:`Counters UV-driven melanin and fades post-acne marks. Critical with UV ${w.uv}.`});
+  if(c.hydration&&c.hydration.adj<70||w.humidity<=50)ing.push({n:'Hyaluronic Acid',p:'1-2%',tags:[{t:'Hydration',c:''},{t:'Barrier Repair',c:'green'}],w:w.humidity>=65?`Draws moisture from ${w.humidity}% humidity into skin.`:`Replenishes moisture in ${w.humidity}% humidity.`});
+  if(c.wrinkles&&c.wrinkles.adj<80)ing.push({n:'Retinol',p:'0.25-0.5%',tags:[{t:'Anti-Aging',c:'red'},{t:'Cell Renewal',c:'green'}],w:`Stimulates collagen production. Use at night — UV ${w.uv} makes daytime use risky.`});
+  if(c.pores&&c.pores.adj<80)ing.push({n:'AHA/BHA Toner',p:'5-7%',tags:[{t:'Pore Refining',c:''},{t:'Exfoliation',c:'red'}],w:`Clears pore buildup and smooths skin texture in ${w.humidity>=70?'humid':'dry'} conditions.`});
+  if(c.dark_circles&&c.dark_circles.adj<80)ing.push({n:'Caffeine Eye Serum',p:'3-5%',tags:[{t:'De-Puffing',c:''},{t:'Brightening',c:'green'}],w:`Reduces dark circles and puffiness. AQI ${w.aqi} oxidative stress worsens under-eye area.`});
   if(w.aqi>=120)ing.push({n:'Vitamin E',p:'0.5-1%',tags:[{t:'Anti-Pollution',c:'green'},{t:'Antioxidant',c:''}],w:`Neutralizes free radicals from AQI ${w.aqi}.`});
   if(w.uv>=7)ing.push({n:'Zinc Oxide SPF',p:'50+',tags:[{t:'UV Shield',c:'green'},{t:'Broad Spectrum',c:'red'}],w:`Physical UV filter essential at UV ${w.uv}.`});
 
@@ -732,7 +758,7 @@ function buildDY(r,w,av,pr,ing){
   const cn=CITIES[city].name;
   return{v:'1.0',ts:new Date().toISOString(),sid,user:{city:cn,skinType:BASE.type,skinTone:BASE.tone,score:r.score},environment:{city:cn,uv:w.uv,uvSev:r.uv.l,aqi:w.aqi,aqiSev:r.aqi.l,humidity:w.humidity,humSev:r.hum.l,temp:w.temp,tmpSev:r.tmp.l,src:wSrc},analysis:{score:r.score,concerns:Object.values(r.c).map(c=>({name:c.n,base:c.base,adjusted:c.adj,severity:c.sev,modifier:c.mod,dominant:c.dom}))},recommendations:{prefer:ing.map(i=>({name:i.n,concentration:i.p,reason:i.w})),avoid:av.map(a=>({text:a.t,reason:a.r})),tags:[...new Set(Object.values(r.c).flatMap(c=>genTags(c,w)))]},advice:{avoid:av.map(a=>({text:a.t,reason:a.r})),prefer:pr.map(p=>({text:p.t,reason:p.r}))},zeroPartyData:zpd};
 }
-function genTags(c,w){const t=[];if(w.aqi>=100)t.push('anti-pollution');if(w.uv>=6)t.push('spf-critical');if(w.humidity>=70)t.push('lightweight');if(w.humidity<=45)t.push('deep-hydration');t.push(c.n.toLowerCase()+'-care');return t}
+function genTags(c,w){const t=[];if(w.aqi>=100)t.push('anti-pollution');if(w.uv>=6)t.push('spf-critical');if(w.humidity>=70)t.push('lightweight');if(w.humidity<=45)t.push('deep-hydration');t.push((c.tn||c.n.toLowerCase().replace(/\s+/g,'-'))+'-care');return t}
 
 function restart(){
   track('restart');city=null;wData=null;results=null;
